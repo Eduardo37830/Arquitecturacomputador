@@ -9,136 +9,55 @@ class CPU:
         self.memory = Memory()
         self.current_cycle = 'FETCH'
         self.halted = False
+        # Diccionario de instrucciones
+        self.instruction_set = {
+            # 0 direcciones
+            'NOP': self._op_nop,
+            'HLT': self._op_hlt,
+            'HALT': self._op_hlt,
+            'RET': self._op_ret,
+            'CLC': self._op_clc,
+            'STC': self._op_stc,
+            'IN': self._op_in,
+            'OUT': self._op_out,
+            'PUSH': self._op_push,
+            'POP': self._op_pop,
+            # 1 dirección
+            'LOAD': self._op_load,
+            'STORE': self._op_store,
+            'JMP': self._op_jmp,
+            'JZ': self._op_jz,
+            'INC': self._op_inc,
+            'DEC': self._op_dec,
+            'NOT': self._op_not,
+            # 2 direcciones
+            'MOV': self._op_mov,
+            'ADD': self._op_add,
+            'SUB': self._op_sub,
+            'AND': self._op_and,
+            'OR': self._op_or,
+            'CMP': self._op_cmp,
+            'XCHG': self._op_xchg,
+            'XOR': self._op_xor,
+            'SHL': self._op_shl,
+            'SHR': self._op_shr,
+            # 3 direcciones
+            'MUL': self._op_mul,
+            'DIV': self._op_div,
+        }
 
     def decode_execute(self, instr):
+        # Solo procesa si es una instrucción válida (tupla o string)
+        if not isinstance(instr, (tuple, str)):
+            return  # Ignora datos que no son instrucciones
         if isinstance(instr, tuple):
             opcode = instr[0].upper()
             ops = instr[1:]
         else:
             opcode = instr.upper()
             ops = ()
-        # 0 direcciones
-        if opcode == "NOP":
-            pass
-        elif opcode in ("HLT", "HALT"):
-            self.halted = True
-        elif opcode == "RET":
-            # Simulación simple: no hay pila, solo ejemplo
-            pass
-        elif opcode == "CLC":
-            self.alu.flags['C'] = 0
-        elif opcode == "STC":
-            self.alu.flags['C'] = 1
-        elif opcode == "IN":
-            val = int(input("IN (entrada de dato): "))
-            self.registers.RVPU[0] = val & 0xFF
-        elif opcode == "OUT":
-            print(f"OUT: {self.registers.RVPU[0]}")
-        # 1 dirección
-        elif opcode == "LOAD":
-            addr, = ops
-            self.registers.MAR = addr
-            self.registers.MBR = self.memory.read(self.registers.MAR)
-            self.registers.RVPU[0] = self.registers.MBR
-        elif opcode == "STORE":
-            addr, = ops
-            self.registers.MAR = addr
-            self.registers.MBR = self.registers.RVPU[0]
-            self.memory.write(self.registers.MAR, self.registers.MBR)
-        elif opcode == "JMP":
-            addr, = ops
-            self.registers.PC = addr
-        elif opcode == "JZ":
-            addr, = ops
-            if self.alu.flags['Z']:
-                self.registers.PC = addr
-        elif opcode == "INC":
-            addr, = ops
-            self.registers.RVPU[addr] = self.alu.add(self.registers.RVPU[addr], 1)
-        elif opcode == "DEC":
-            addr, = ops
-            self.registers.RVPU[addr] = self.alu.sub(self.registers.RVPU[addr], 1)
-        elif opcode == "NOT":
-            addr, = ops
-            self.registers.RVPU[addr] = self.alu.complement(self.registers.RVPU[addr])
-        # 2 direcciones
-        elif opcode == "MOV":
-            dst, src = ops
-            self.registers.RVPU[dst] = self.registers.RVPU[src]
-        elif opcode == "ADD":
-            if len(ops) == 2:
-                dst, src = ops
-                self.registers.RVPU[dst] = self.alu.add(self.registers.RVPU[dst], self.registers.RVPU[src])
-            elif len(ops) == 3:
-                dst, src1, src2 = ops
-                self.registers.RVPU[dst] = self.alu.add(self.registers.RVPU[src1], self.registers.RVPU[src2])
-        elif opcode == "SUB":
-            if len(ops) == 2:
-                dst, src = ops
-                self.registers.RVPU[dst] = self.alu.sub(self.registers.RVPU[dst], self.registers.RVPU[src])
-            elif len(ops) == 3:
-                dst, src1, src2 = ops
-                self.registers.RVPU[dst] = self.alu.sub(self.registers.RVPU[src1], self.registers.RVPU[src2])
-        elif opcode == "AND":
-            if len(ops) == 2:
-                dst, src = ops
-                self.registers.RVPU[dst] = self.alu.logical_and(self.registers.RVPU[dst], self.registers.RVPU[src])
-            elif len(ops) == 3:
-                dst, src1, src2 = ops
-                self.registers.RVPU[dst] = self.alu.logical_and(self.registers.RVPU[src1], self.registers.RVPU[src2])
-        elif opcode == "OR":
-            if len(ops) == 2:
-                dst, src = ops
-                self.registers.RVPU[dst] = self.alu.logical_or(self.registers.RVPU[dst], self.registers.RVPU[src])
-            elif len(ops) == 3:
-                dst, src1, src2 = ops
-                self.registers.RVPU[dst] = self.alu.logical_or(self.registers.RVPU[src1], self.registers.RVPU[src2])
-        elif opcode == "CMP":
-            if len(ops) == 2:
-                dst, src = ops
-                _ = self.alu.sub(self.registers.RVPU[dst], self.registers.RVPU[src])
-            elif len(ops) == 3:
-                dst, src1, src2 = ops
-                _ = self.alu.sub(self.registers.RVPU[src1], self.registers.RVPU[src2])
-        elif opcode == "XCHG":
-            dst, src = ops
-            self.registers.RVPU[dst], self.registers.RVPU[src] = self.registers.RVPU[src], self.registers.RVPU[dst]
-        elif opcode == "XOR":
-            if len(ops) == 2:
-                dst, src = ops
-                self.registers.RVPU[dst] = self.alu.logical_xor(self.registers.RVPU[dst], self.registers.RVPU[src])
-            elif len(ops) == 3:
-                dst, src1, src2 = ops
-                self.registers.RVPU[dst] = self.alu.logical_xor(self.registers.RVPU[src1], self.registers.RVPU[src2])
-        elif opcode == "SHL":
-            if len(ops) == 2:
-                dst, n = ops
-                self.registers.RVPU[dst] = self.alu.shift_left(self.registers.RVPU[dst], n)
-            elif len(ops) == 3:
-                dst, src, n = ops
-                self.registers.RVPU[dst] = self.alu.shift_left(self.registers.RVPU[src], n)
-        elif opcode == "SHR":
-            if len(ops) == 2:
-                dst, n = ops
-                self.registers.RVPU[dst] = self.alu.shift_right(self.registers.RVPU[dst], n)
-            elif len(ops) == 3:
-                dst, src, n = ops
-                self.registers.RVPU[dst] = self.alu.shift_right(self.registers.RVPU[src], n)
-        elif opcode == "MUL":
-            if len(ops) == 3:
-                dst, src1, src2 = ops
-                res = (self.registers.RVPU[src1] * self.registers.RVPU[src2]) & 0xFF
-                self.registers.RVPU[dst] = res
-                self.alu._update_flags(res)
-        elif opcode == "DIV":
-            if len(ops) == 3:
-                dst, src1, src2 = ops
-                if self.registers.RVPU[src2] != 0:
-                    res = (self.registers.RVPU[src1] // self.registers.RVPU[src2]) & 0xFF
-                else:
-                    res = 0
-                self.registers.RVPU[dst] = res
-                self.alu._update_flags(res)
+        if opcode in self.instruction_set:
+            self.instruction_set[opcode](*ops)
         self.registers.PSW = (
             (self.alu.flags['Z'] << 0) |
             (self.alu.flags['C'] << 1) |
@@ -146,25 +65,260 @@ class CPU:
             (self.alu.flags['O'] << 3)
         )
 
+    # Métodos para cada instrucción
+    def _op_nop(self):
+        pass
+    def _op_hlt(self):
+        self.halted = True
+    def _op_ret(self):
+        pass  # Simulación simple
+    def _op_clc(self):
+        self.alu.flags['C'] = 0
+    def _op_stc(self):
+        self.alu.flags['C'] = 1
+    def _op_in(self):
+        val = int(input("IN (entrada de dato): "))
+        self.registers.RVPU[0] = val & 0xFF
+        print(f"[DEBUG] IN -> R0 = {self.registers.RVPU[0]}") # DEBUG
+    def _op_out(self):
+        print(f"OUT: {self.registers.RVPU[0]}")
+    def _resolve_operand(self, op):
+        if isinstance(op, tuple) and op[0] == '@':
+            return self.memory.read(op[1])
+        return op
+
+    def _op_load(self, *ops):
+        if len(ops) == 2:
+            reg, addr = ops
+            addr_val = addr[1] if isinstance(addr, tuple) and addr[0] == '@' else addr
+            print(f"[DEBUG] Executing: LOAD R{reg}, M[{addr_val}]")
+            self.registers.MAR = addr_val
+            self.registers.MBR = self.memory.read(self.registers.MAR)
+            print(f"[DEBUG] LOAD: M[{addr_val}] (value: {self.registers.MBR}) -> MBR")
+            self.registers.RVPU[reg] = self.registers.MBR
+            print(f"[DEBUG] LOAD: MBR -> R{reg} (new value: {self.registers.RVPU[reg]})")
+        else:
+            addr, = ops
+            addr_val = addr[1] if isinstance(addr, tuple) and addr[0] == '@' else addr
+            print(f"[DEBUG] Executing: LOAD R0, M[{addr_val}]")
+            self.registers.MAR = addr_val
+            self.registers.MBR = self.memory.read(self.registers.MAR)
+            print(f"[DEBUG] LOAD: M[{addr_val}] (value: {self.registers.MBR}) -> MBR")
+            self.registers.RVPU[0] = self.registers.MBR
+            print(f"[DEBUG] LOAD: MBR -> R0 (new value: {self.registers.RVPU[0]})")
+
+    def _op_store(self, *ops):
+        if len(ops) == 2:
+            reg, addr = ops
+            addr_val = addr[1] if isinstance(addr, tuple) and addr[0] == '@' else addr
+            print(f"[DEBUG] Executing: STORE R{reg}, M[{addr_val}]")
+            self.registers.MAR = addr_val
+            self.registers.MBR = self.registers.RVPU[reg]
+            print(f"[DEBUG] STORE: R{reg} (value: {self.registers.RVPU[reg]}) -> MBR")
+            self.memory.write(self.registers.MAR, self.registers.MBR)
+            print(f"[DEBUG] STORE: MBR -> M[{addr_val}] (new value: {self.memory.read(addr_val)})")
+        else:
+            addr, = ops
+            addr_val = addr[1] if isinstance(addr, tuple) and addr[0] == '@' else addr
+            print(f"[DEBUG] Executing: STORE R0, M[{addr_val}]")
+            self.registers.MAR = addr_val
+            self.registers.MBR = self.registers.RVPU[0]
+            print(f"[DEBUG] STORE: R0 (value: {self.registers.RVPU[0]}) -> MBR")
+            self.memory.write(self.registers.MAR, self.registers.MBR)
+            print(f"[DEBUG] STORE: MBR -> M[{addr_val}] (new value: {self.memory.read(addr_val)})")
+
+    def _op_add(self, *ops):
+        if len(ops) == 2:
+            dst, src = ops
+            if not self._valid_reg(dst): return
+            val_dst_before = self.registers.RVPU[dst]
+            val_src = self._resolve_operand(src)
+            print(f"[DEBUG] Executing: ADD R{dst}, {src} (R{dst} before: {val_dst_before}, src: {val_src})")
+            self.registers.RVPU[dst] = self.alu.add(val_dst_before, val_src)
+            print(f"[DEBUG] ADD: R{dst} new value: {self.registers.RVPU[dst]}")
+        elif len(ops) == 3:
+            dst, src1, src2 = ops
+            if not self._valid_reg(dst): return
+            val_src1 = self._resolve_operand(src1)
+            val_src2 = self._resolve_operand(src2)
+            print(f"[DEBUG] Executing: ADD R{dst}, {src1}, {src2} (src1: {val_src1}, src2: {val_src2})")
+            self.registers.RVPU[dst] = self.alu.add(val_src1, val_src2)
+            print(f"[DEBUG] ADD: R{dst} new value: {self.registers.RVPU[dst]}")
+
+    def _op_sub(self, *ops):
+        if len(ops) == 2:
+            dst, src = ops
+            if not self._valid_reg(dst): return
+            val_dst_before = self.registers.RVPU[dst]
+            val_src = self._resolve_operand(src)
+            print(f"[DEBUG] Executing: SUB R{dst}, {src} (R{dst} before: {val_dst_before}, src: {val_src})")
+            self.registers.RVPU[dst] = self.alu.sub(val_dst_before, val_src)
+            print(f"[DEBUG] SUB: R{dst} new value: {self.registers.RVPU[dst]}")
+        elif len(ops) == 3:
+            dst, src1, src2 = ops
+            if not self._valid_reg(dst): return
+            val_src1 = self._resolve_operand(src1)
+            val_src2 = self._resolve_operand(src2)
+            print(f"[DEBUG] Executing: SUB R{dst}, {src1}, {src2} (src1: {val_src1}, src2: {val_src2})")
+            self.registers.RVPU[dst] = self.alu.sub(val_src1, val_src2)
+            print(f"[DEBUG] SUB: R{dst} new value: {self.registers.RVPU[dst]}")
+
+    def _op_jmp(self, addr):
+        self.registers.PC = addr
+    def _op_jz(self, addr):
+        if self.alu.flags['Z']:
+            self.registers.PC = addr
+
+    def _valid_reg(self, idx):
+        if not (0 <= idx < len(self.registers.RVPU)):
+            print(f"[ERROR] Registro fuera de rango: R{idx}")
+            return False
+        return True
+
+    def _op_inc(self, addr):
+        if not self._valid_reg(addr): return
+        before = self.registers.RVPU[addr]
+        self.registers.RVPU[addr] = self.alu.add(self.registers.RVPU[addr], 1)
+        print(f"[DEBUG] INC: R{addr} {before} -> {self.registers.RVPU[addr]}")
+
+    def _op_dec(self, addr):
+        if not self._valid_reg(addr): return
+        before = self.registers.RVPU[addr]
+        self.registers.RVPU[addr] = self.alu.sub(self.registers.RVPU[addr], 1)
+        print(f"[DEBUG] DEC: R{addr} {before} -> {self.registers.RVPU[addr]}")
+
+    def _op_not(self, addr):
+        if not self._valid_reg(addr): return
+        before = self.registers.RVPU[addr]
+        self.registers.RVPU[addr] = self.alu.complement(self.registers.RVPU[addr])
+        print(f"[DEBUG] NOT: R{addr} {before} -> {self.registers.RVPU[addr]}")
+
+    def _op_mov(self, dst, src):
+        if not self._valid_reg(dst) or not self._valid_reg(src): return
+        before = self.registers.RVPU[dst]
+        self.registers.RVPU[dst] = self.registers.RVPU[src]
+        print(f"[DEBUG] MOV: R{dst} {before} -> {self.registers.RVPU[dst]} (copiado de R{src})")
+
+    def _op_and(self, *ops):
+        if len(ops) == 2:
+            dst, src = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src): return
+            self.registers.RVPU[dst] = self.alu.logical_and(self.registers.RVPU[dst], self.registers.RVPU[src])
+        elif len(ops) == 3:
+            dst, src1, src2 = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+            self.registers.RVPU[dst] = self.alu.logical_and(self.registers.RVPU[src1], self.registers.RVPU[src2])
+
+    def _op_or(self, *ops):
+        if len(ops) == 2:
+            dst, src = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src): return
+            self.registers.RVPU[dst] = self.alu.logical_or(self.registers.RVPU[dst], self.registers.RVPU[src])
+        elif len(ops) == 3:
+            dst, src1, src2 = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+            self.registers.RVPU[dst] = self.alu.logical_or(self.registers.RVPU[src1], self.registers.RVPU[src2])
+
+    def _op_cmp(self, *ops):
+        if len(ops) == 2:
+            dst, src = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src): return
+            _ = self.alu.sub(self.registers.RVPU[dst], self.registers.RVPU[src])
+        elif len(ops) == 3:
+            dst, src1, src2 = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+            _ = self.alu.sub(self.registers.RVPU[src1], self.registers.RVPU[src2])
+
+    def _op_xchg(self, dst, src):
+        if not self._valid_reg(dst) or not self._valid_reg(src): return
+        self.registers.RVPU[dst], self.registers.RVPU[src] = self.registers.RVPU[src], self.registers.RVPU[dst]
+
+    def _op_xor(self, *ops):
+        if len(ops) == 2:
+            dst, src = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src): return
+            self.registers.RVPU[dst] = self.alu.logical_xor(self.registers.RVPU[dst], self.registers.RVPU[src])
+        elif len(ops) == 3:
+            dst, src1, src2 = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+            self.registers.RVPU[dst] = self.alu.logical_xor(self.registers.RVPU[src1], self.registers.RVPU[src2])
+
+    def _op_shl(self, *ops):
+        if len(ops) == 2:
+            dst, n = ops
+            if not self._valid_reg(dst): return
+            self.registers.RVPU[dst] = self.alu.shift_left(self.registers.RVPU[dst], n)
+        elif len(ops) == 3:
+            dst, src, n = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src): return
+            self.registers.RVPU[dst] = self.alu.shift_left(self.registers.RVPU[src], n)
+
+    def _op_shr(self, *ops):
+        if len(ops) == 2:
+            dst, n = ops
+            if not self._valid_reg(dst): return
+            self.registers.RVPU[dst] = self.alu.shift_right(self.registers.RVPU[dst], n)
+        elif len(ops) == 3:
+            dst, src, n = ops
+            if not self._valid_reg(dst) or not self._valid_reg(src): return
+            self.registers.RVPU[dst] = self.alu.shift_right(self.registers.RVPU[src], n)
+
+    def _op_mul(self, dst, src1, src2):
+        if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+        res = (self.registers.RVPU[src1] * self.registers.RVPU[src2]) & 0xFF
+        self.registers.RVPU[dst] = res
+        self.alu._update_flags(res)
+
+    def _op_div(self, dst, src1, src2):
+        if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+        if self.registers.RVPU[src2] != 0:
+            res = (self.registers.RVPU[src1] // self.registers.RVPU[src2]) & 0xFF
+        else:
+            res = 0
+        self.registers.RVPU[dst] = res
+        self.alu._update_flags(res)
+
+    def _op_push(self, *ops):
+        # Por convención, SP es R7
+        sp = 7
+        reg = 0
+        if len(ops) == 1:
+            reg = ops[0]
+        self.registers.RVPU[sp] = (self.registers.RVPU[sp] - 1) & 0xFF
+        addr = self.registers.RVPU[sp]
+        self.memory.write(addr, self.registers.RVPU[reg])
+    def _op_pop(self, *ops):
+        sp = 7
+        reg = 0
+        if len(ops) == 1:
+            reg = ops[0]
+        addr = self.registers.RVPU[sp]
+        self.registers.RVPU[reg] = self.memory.read(addr)
+        self.registers.RVPU[sp] = (self.registers.RVPU[sp] + 1) & 0xFF
+
     def step(self):
         # Ciclo de instrucción (fetch-decode-execute) paso a paso
         if not hasattr(self, '_cycle_state'):
             self._cycle_state = 0  # 0: fetch, 1: decode, 2: execute
         if self._cycle_state == 0:
             self.current_cycle = 'FETCH'
-            pc = self.registers.PC
-            instr = self.memory.read(pc)
-            self.registers.IR = instr
+            # PC -> MAR
+            self.registers.MAR = self.registers.PC
+            # MAR -> MBR
+            self.registers.MBR = self.memory.read(self.registers.MAR)
+            # MBR -> IR
+            self.registers.IR = self.registers.MBR
+            # PC++
             self.registers.PC += 1
-            self._fetched_instr = instr
             self._cycle_state = 1
         elif self._cycle_state == 1:
             self.current_cycle = 'DECODE'
             # Aquí podrías hacer decodificación más detallada si lo deseas
+            # Por ahora solo placeholder, IR ya contiene la instrucción
             self._cycle_state = 2
         elif self._cycle_state == 2:
             self.current_cycle = 'EXECUTE'
-            self.decode_execute(self._fetched_instr)
+            self.decode_execute(self.registers.IR)
             self._cycle_state = 0
         else:
             self._cycle_state = 0
