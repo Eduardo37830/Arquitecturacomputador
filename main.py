@@ -297,32 +297,89 @@ class CPU:
         self.registers.RVPU[sp] = (self.registers.RVPU[sp] + 1) & 0xFF
 
     def step(self):
-        # Ciclo de instrucción (fetch-decode-execute) paso a paso
-        if not hasattr(self, '_cycle_state'):
-            self._cycle_state = 0  # 0: fetch, 1: decode, 2: execute
-        if self._cycle_state == 0:
-            self.current_cycle = 'FETCH'
-            # PC -> MAR
-            self.registers.MAR = self.registers.PC
-            # MAR -> MBR
-            self.registers.MBR = self.memory.read(self.registers.MAR)
-            # MBR -> IR
-            self.registers.IR = self.registers.MBR
-            # PC++
+        # Ejecución paso a paso de cada fase FI-DI-CO-FO-EI-WO
+        if not hasattr(self, '_fidicofoeiwo_state'):
+            self._fidicofoeiwo_state = 0
+            self._fidicofoeiwo_context = {}
+        if self.halted:
+            print("[FIDICOFOEIWO] CPU detenida (HALT)")
+            return
+        fases = [
+            'FETCH', 'IDENTIFICACION', 'DECODIFICACION', 'CALCULO_OPERANDO',
+            'FETCH_OPERANDO', 'EJECUCION', 'WRITEBACK', 'OUTPUT'
+        ]
+        fase = fases[self._fidicofoeiwo_state]
+        ctx = self._fidicofoeiwo_context
+        if fase == 'FETCH':
+            pc = self.registers.PC
+            instr = self.memory.read(pc)
+            print(f"[FIDICOFOEIWO] FETCH: PC={pc}, INSTR={instr}")
+            self.registers.IR = instr
+            ctx['instr'] = instr
+            ctx['pc'] = pc
             self.registers.PC += 1
-            self._cycle_state = 1
-        elif self._cycle_state == 1:
-            self.current_cycle = 'DECODE'
-            # Aquí podrías hacer decodificación más detallada si lo deseas
-            # Por ahora solo placeholder, IR ya contiene la instrucción
-            self._cycle_state = 2
-        elif self._cycle_state == 2:
-            self.current_cycle = 'EXECUTE'
-            self.decode_execute(self.registers.IR)
-            self._cycle_state = 0
-        else:
-            self._cycle_state = 0
-            self.current_cycle = 'FETCH'
+        elif fase == 'IDENTIFICACION':
+            instr = ctx['instr']
+            if isinstance(instr, tuple):
+                opcode = instr[0].upper()
+                ops = instr[1:]
+            elif isinstance(instr, str):
+                opcode = instr.upper()
+                ops = ()
+            else:
+                print("[FIDICOFOEIWO] INSTRUCCIÓN NO VÁLIDA")
+                self._fidicofoeiwo_state = 0
+                return
+            ctx['opcode'] = opcode
+            ctx['ops'] = ops
+            print(f"[FIDICOFOEIWO] IDENTIFICACIÓN: OPCODE={opcode}")
+        elif fase == 'DECODIFICACION':
+            opcode = ctx['opcode']
+            ops = ctx['ops']
+            if opcode not in self.instruction_set:
+                print(f"[FIDICOFOEIWO] INSTRUCCIÓN DESCONOCIDA: {opcode}")
+                self._fidicofoeiwo_state = 0
+                return
+            print(f"[FIDICOFOEIWO] DECODIFICACIÓN: OPERANDOS={ops}")
+        elif fase == 'CALCULO_OPERANDO':
+            ops = ctx['ops']
+            resolved_ops = tuple(self._resolve_operand(op) for op in ops)
+            ctx['resolved_ops'] = resolved_ops
+            print(f"[FIDICOFOEIWO] CÁLCULO DE OPERANDO: {resolved_ops}")
+        elif fase == 'FETCH_OPERANDO':
+            # En este ejemplo, ya se resolvieron los operandos en la fase anterior
+            print(f"[FIDICOFOEIWO] FETCH OPERANDO: {ctx['resolved_ops']}")
+        elif fase == 'EJECUCION':
+            opcode = ctx['opcode']
+            resolved_ops = ctx['resolved_ops']
+            print(f"[FIDICOFOEIWO] EJECUCIÓN: {opcode} {resolved_ops}")
+            self.instruction_set[opcode](*resolved_ops)
+        elif fase == 'WRITEBACK':
+            # Simulación: el writeback depende de la instrucción, pero actualizamos PSW
+            self.registers.PSW = (
+                (self.alu.flags['Z'] << 0) |
+                (self.alu.flags['C'] << 1) |
+                (self.alu.flags['S'] << 2) |
+                (self.alu.flags['O'] << 3)
+            )
+            print(f"[FIDICOFOEIWO] WRITEBACK: PSW={self.registers.PSW}")
+        elif fase == 'OUTPUT':
+            # Simulación: solo mostramos que terminó el ciclo
+            print(f"[FIDICOFOEIWO] OUTPUT: Fin de ciclo para instrucción {ctx['opcode']}\n")
+        # Avanza a la siguiente fase
+        self._fidicofoeiwo_state = (self._fidicofoeiwo_state + 1) % len(fases)
+        # Si termina OUTPUT, reinicia contexto para la siguiente instrucción
+        if self._fidicofoeiwo_state == 0:
+            self._fidicofoeiwo_context = {}
+
+    def get_fidicofoeiwo_phase(self):
+        fases = [
+            'FETCH', 'IDENTIFICACION', 'DECODIFICACION', 'CALCULO_OPERANDO',
+            'FETCH_OPERANDO', 'EJECUCION', 'WRITEBACK', 'OUTPUT'
+        ]
+        if hasattr(self, '_fidicofoeiwo_state'):
+            return fases[self._fidicofoeiwo_state]
+        return 'FETCH'
 
 if __name__ == '__main__':
     from gui import CPUGUI

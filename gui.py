@@ -96,6 +96,8 @@ class CPUGUI(tk.Tk):
         self.cycle_frame.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         self.cycle_label = ttk.Label(self.cycle_frame, text='Fase: FETCH')
         self.cycle_label.grid(row=0, column=0, sticky='w')
+        self.phase_desc_label = ttk.Label(self.cycle_frame, text='', font=('Consolas', 9, 'italic'), foreground='#e5c07b')
+        self.phase_desc_label.grid(row=1, column=0, sticky='w')
         self.input_frame = ttk.LabelFrame(self.bottom_frame, text='Programa (una instrucción por línea)')
         self.input_frame.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky='ew')
         self.input_frame.grid_columnconfigure(0, weight=1)
@@ -126,7 +128,19 @@ class CPUGUI(tk.Tk):
         self.mem_table_frame.update_idletasks()
         self.mem_canvas.config(scrollregion=self.mem_canvas.bbox("all"))
         # Actualizar ciclo de instrucción
-        self.cycle_label.config(text=f'Fase: {self.cpu.current_cycle}')
+        phase = self.cpu.get_fidicofoeiwo_phase()
+        self.cycle_label.config(text=f'Fase: {phase}')
+        phase_desc = {
+            'FETCH': 'FETCH: Trae la instrucción de memoria (PC).',
+            'IDENTIFICACION': 'IDENTIFICACIÓN: Determina el tipo de instrucción.',
+            'DECODIFICACION': 'DECODIFICACIÓN: Extrae opcode y operandos.',
+            'CALCULO_OPERANDO': 'CÁLCULO DE OPERANDO: Calcula direcciones/valores.',
+            'FETCH_OPERANDO': 'FETCH OPERANDO: Obtiene operandos de memoria/reg.',
+            'EJECUCION': 'EJECUCIÓN: Ejecuta la operación.',
+            'WRITEBACK': 'WRITEBACK: Escribe el resultado.',
+            'OUTPUT': 'OUTPUT: Muestra o envía el resultado.'
+        }
+        self.phase_desc_label.config(text=phase_desc.get(phase, ''))
         # Información extendida
         info = f"\n--- INFORMACIÓN DETALLADA ---\n"
         info += f"Registros: {regs['RVPU']}\n"
