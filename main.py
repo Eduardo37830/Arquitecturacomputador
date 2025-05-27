@@ -9,6 +9,7 @@ class CPU:
         self.memory = Memory()
         self.current_cycle = 'FETCH'
         self.halted = False
+        self.output_char = None  # Buffer para salida de caracteres
         # Diccionario de instrucciones
         self.instruction_set = {
             # 0 direcciones
@@ -44,6 +45,8 @@ class CPU:
             # 3 direcciones
             'MUL': self._op_mul,
             'DIV': self._op_div,
+            # Inmediato
+            'MOVI': self._op_movi,
         }
 
     def decode_execute(self, instr):
@@ -81,7 +84,13 @@ class CPU:
         self.registers.RVPU[0] = val & 0xFF
         print(f"[DEBUG] IN -> R0 = {self.registers.RVPU[0]}") # DEBUG
     def _op_out(self):
-        print(f"OUT: {self.registers.RVPU[0]}")
+        char_code = self.registers.RVPU[0]
+        try:
+            self.output_char = chr(char_code)
+            print(f"OUT: Emitting char '{self.output_char}' ({char_code})")
+        except ValueError:
+            print(f"OUT: Invalid char code {char_code}")
+            self.output_char = '?'
     def _resolve_operand(self, op):
         if isinstance(op, tuple) and op[0] == '@':
             return self.memory.read(op[1])
@@ -295,6 +304,12 @@ class CPU:
         addr = self.registers.RVPU[sp]
         self.registers.RVPU[reg] = self.memory.read(addr)
         self.registers.RVPU[sp] = (self.registers.RVPU[sp] + 1) & 0xFF
+
+    def _op_movi(self, dst, val):
+        """Carga un valor inmediato en un registro."""
+        if not self._valid_reg(dst): return
+        self.registers.RVPU[dst] = val & 0xFF # Asegura 8 bits
+        print(f"[DEBUG] MOVI: R{dst} -> {self.registers.RVPU[dst]}")
 
     def step(self):
         # Ejecución paso a paso de cada fase FI-DI-CO-FO-EI-WO
