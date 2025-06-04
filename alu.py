@@ -17,10 +17,11 @@ class ALU:
         return result
 
     def sub(self, a, b):
-        result = a - b
-        carry = int(a < b)
+        # Resta de 8 bits con complemento a dos
+        result = (a - b) & 0xFF
+        carry = int(a < b)  # Carry si hay préstamo
+        # El overflow ocurre si los operandos tienen signos diferentes y el resultado tiene signo diferente a a
         overflow = int(((a ^ b) & (a ^ result) & 0x80) != 0)
-        result &= 0xFF
         self._update_flags(result, carry, overflow)
         return result
 
@@ -55,4 +56,3 @@ class ALU:
         result = (~a) & 0xFF
         self._update_flags(result)
         return result
-

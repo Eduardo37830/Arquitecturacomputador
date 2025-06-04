@@ -83,8 +83,16 @@ class CPU:
         val = int(input("IN (entrada de dato): "))
         self.registers.RVPU[0] = val & 0xFF
         print(f"[DEBUG] IN -> R0 = {self.registers.RVPU[0]}") # DEBUG
-    def _op_out(self):
-        char_code = self.registers.RVPU[0]
+    def _op_out(self, *ops):
+        # Permite OUT o OUT reg
+        reg = 0
+        if len(ops) == 1:
+            reg = ops[0]
+        # Si el operando es una tupla tipo ('@', n), leer el valor de memoria
+        if isinstance(reg, tuple) and reg[0] == '@':
+            char_code = self.memory.read(reg[1])
+        else:
+            char_code = self.registers.RVPU[reg]
         try:
             self.output_char = chr(char_code)
             print(f"OUT: Emitting char '{self.output_char}' ({char_code})")
@@ -117,9 +125,21 @@ class CPU:
             print(f"[DEBUG] LOAD: MBR -> R0 (new value: {self.registers.RVPU[0]})")
 
     def _op_store(self, *ops):
+        # Permite STORE reg, @dir o STORE @dir, reg
         if len(ops) == 2:
-            reg, addr = ops
-            addr_val = addr[1] if isinstance(addr, tuple) and addr[0] == '@' else addr
+            op1, op2 = ops
+            # Si el primer operando es una dirección (@), entonces es STORE @dir, reg
+            if isinstance(op1, tuple) and op1[0] == '@':
+                addr_val = op1[1]
+                reg = op2
+            # Si el segundo operando es una dirección (@), entonces es STORE reg, @dir
+            elif isinstance(op2, tuple) and op2[0] == '@':
+                addr_val = op2[1]
+                reg = op1
+            else:
+                # Ambos son enteros, se asume STORE reg, addr
+                addr_val = op2
+                reg = op1
             print(f"[DEBUG] Executing: STORE R{reg}, M[{addr_val}]")
             self.registers.MAR = addr_val
             self.registers.MBR = self.registers.RVPU[reg]
@@ -164,12 +184,12 @@ class CPU:
             self.registers.RVPU[dst] = self.alu.sub(val_dst_before, val_src)
             print(f"[DEBUG] SUB: R{dst} new value: {self.registers.RVPU[dst]}")
         elif len(ops) == 3:
-            dst, src1, src2 = ops
-            if not self._valid_reg(dst): return
-            val_src1 = self._resolve_operand(src1)
-            val_src2 = self._resolve_operand(src2)
-            print(f"[DEBUG] Executing: SUB R{dst}, {src1}, {src2} (src1: {val_src1}, src2: {val_src2})")
-            self.registers.RVPU[dst] = self.alu.sub(val_src1, val_src2)
+            dst, minuendo, sustraendo = ops
+            # Permite SUB 4, 1, 5  o SUB 4, @50, @51, etc.
+            val_minuendo = self._resolve_operand(minuendo)
+            val_sustraendo = self._resolve_operand(sustraendo)
+            print(f"[DEBUG] Executing: SUB R{dst}, {minuendo}, {sustraendo} (minuendo: {val_minuendo}, sustraendo: {val_sustraendo})")
+            self.registers.RVPU[dst] = self.alu.sub(val_minuendo, val_sustraendo)
             print(f"[DEBUG] SUB: R{dst} new value: {self.registers.RVPU[dst]}")
 
     def _op_jmp(self, addr):

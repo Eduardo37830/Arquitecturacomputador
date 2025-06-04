@@ -1,5 +1,9 @@
+# Cargar los operandos
 LOAD 0, @100  # Carga el valor de Memoria[@100] (A) en R0
 LOAD 1, @101  # Carga el valor de Memoria[@101] (B) en R1
+
+# Realizar la suma
 ADD 0, 0, 1   # R0 = R0 + R1 (R0 = A + B)
-STORE @102, 0  # Almacena el resultado de R0 en Memoria[@102] (C)
-OUT 0          # Imprime el valor de R0 (C)
+
+# Almacenar el resultado
+STORE 0, @102 # Guarda el contenido de R0 (A+B) en Memoria[@102]
