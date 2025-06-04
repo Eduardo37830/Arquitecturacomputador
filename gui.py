@@ -16,7 +16,7 @@ class CPUGUI(tk.Tk):
 
     def reset_cpu(self):
         """Resetea el estado de la CPU y la memoria."""
-        self.cpu.memory.data = [0] * len(self.cpu.memory.data)
+        # self.cpu.memory.data = [0] * len(self.cpu.memory.data)  # resetear la memoria
         self.cpu.registers.PC = 0
         self.cpu.registers.IR = 0
         self.cpu.registers.PSW = 0
@@ -31,6 +31,12 @@ class CPUGUI(tk.Tk):
             self.cpu._fidicofoeiwo_context = {}
         print("[DEBUG_GUI] CPU y Memoria reseteados.")
         self.info_label.config(text="CPU y Memoria reseteados.")
+
+    def limpiar_primeras_16_posiciones_memoria(self):
+        """Limpia (pone a cero) las primeras 16 posiciones de la memoria principal."""
+        if hasattr(self.cpu.memory, 'data'):
+            for i in range(16):
+                self.cpu.memory.data[i] = 0
 
     def create_widgets(self):
         style = ttk.Style()
@@ -174,6 +180,7 @@ class CPUGUI(tk.Tk):
 
     def load_instructions(self):
         self.reset_cpu()
+        self.limpiar_primeras_16_posiciones_memoria()
         lines = self.instr_text.get('1.0', tk.END).strip().split('\n')
         print(f"[DEBUG_GUI] load_instructions: Leyendo {len(lines)} líneas del área de texto.")
         mem_addr = 0
@@ -217,6 +224,7 @@ class CPUGUI(tk.Tk):
             with open(filepath, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             self.reset_cpu()
+            self.limpiar_primeras_16_posiciones_memoria()
             self.instr_text.delete('1.0', tk.END)
             mem_addr = 0
             for line in lines:

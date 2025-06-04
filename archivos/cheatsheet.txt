@@ -1,0 +1,187 @@
+###################################################
+#         Simulador de CPU - Cheatsheet           #
+###################################################
+
+# Notas Generales sobre la Sintaxis:
+# - Registros: Se especifican por su número (ej. 0 para R0, 1 para R1, ... R7).
+# - Direcciones de Memoria: Con '@' seguido del número (ej. @100).
+# - Valores Inmediatos: Números literales (ej. 25).
+# - Separadores: Comas y/o espacios entre operandos.
+# - Comentarios: Líneas que comienzan con '#'.
+# - Mayúsculas/Minúsculas: Mnemónicos no distinguen (parser a mayúsculas).
+
+###################################################
+# 1. Instrucciones de Cero Direcciones
+###################################################
+
+# NOP: No operación.
+NOP
+
+# HLT (o HALT): Detiene la CPU.
+HLT
+
+# CLC: Pone el flag de Acarreo (Carry 'C') a 0.
+CLC
+
+# STC: Pone el flag de Acarreo (Carry 'C') a 1.
+STC
+
+# IN: Lee entrada numérica del usuario y la almacena en R0.
+IN
+
+# OUT: Envía el carácter ASCII de R0 a la consola.
+# Ejemplo:
+# MOVI 0, 65  # Carga ASCII de 'A' en R0
+# OUT         # Imprime 'A'
+
+# PUSH [reg]: Guarda valor de 'reg' (o R0 por defecto) en la pila (R7 es SP).
+# Ejemplos:
+# PUSH 1  # Guarda R1 en la pila
+# PUSH    # Guarda R0 en la pila
+
+# POP [reg]: Recupera valor de la pila a 'reg' (o R0 por defecto).
+# Ejemplos:
+# POP 2   # Recupera de la pila a R2
+# POP     # Recupera de la pila a R0
+
+###################################################
+# 2. Instrucciones de Una Dirección
+###################################################
+
+# LOAD reg, @direccion | LOAD @direccion: Carga valor de memoria a registro (R0 por defecto).
+# Ejemplos:
+# LOAD 0, @100  # R0 = Memoria[100]
+# LOAD @101     # R0 = Memoria[101] (implícito R0)
+
+# STORE reg, @direccion | STORE @direccion: Almacena valor de registro en memoria (R0 por defecto).
+# Ejemplos:
+# STORE 1, @102 # Memoria[102] = R1
+# STORE @103    # Memoria[103] = R0 (implícito R0)
+
+# JMP direccion: Salta a 'direccion'.
+# Ejemplo:
+# JMP 50  # Salta a la instrucción en la dirección 50
+
+# JZ direccion: Salta a 'direccion' si flag Cero (Z) está activo.
+# Ejemplo:
+# CMP 0, 1   # Compara R0 con R1
+# JZ 30      # Si R0 == R1 (Z=1), salta a la dirección 30
+
+# INC reg: Incrementa 'reg' en 1.
+# Ejemplo:
+# INC 0  # R0 = R0 + 1
+
+# DEC reg: Decrementa 'reg' en 1.
+# Ejemplo:
+# DEC 1  # R1 = R1 - 1
+
+# NOT reg: NOT bit a bit sobre 'reg'.
+# Ejemplo:
+# NOT 2  # R2 = ~R2
+
+###################################################
+# 3. Instrucciones de Dos Direcciones
+###################################################
+
+# MOV destino_reg, fuente_reg: Copia 'fuente_reg' a 'destino_reg'.
+# Ejemplo:
+# MOV 0, 1  # R0 = R1
+
+# ADD destino_reg, operando: Suma 'operando' (registro/inmediato/memoria) a 'destino_reg'.
+# Ejemplos:
+# ADD 0, 1    # R0 = R0 + R1
+# ADD 0, 10   # R0 = R0 + 10
+# ADD 0, @50  # R0 = R0 + Memoria[50]
+
+# SUB destino_reg, operando: Resta 'operando' de 'destino_reg'.
+# Ejemplos:
+# SUB 1, 2    # R1 = R1 - R2
+# SUB 1, 5    # R1 = R1 - 5
+# SUB 1, @52  # R1 = R1 - Memoria[52]
+
+# AND destino_reg, fuente_reg: 'destino_reg' = 'destino_reg' & 'fuente_reg'.
+# Ejemplo:
+# AND 0, 1  # R0 = R0 AND R1
+
+# OR destino_reg, fuente_reg: 'destino_reg' = 'destino_reg' | 'fuente_reg'.
+# Ejemplo:
+# OR 1, 2   # R1 = R1 OR R2
+
+# CMP operando1, operando2: Compara 'operando1' y 'operando2' (regs/inmediatos/mem), actualiza flags.
+# Ejemplos:
+# CMP 0, 1    # Compara R0 y R1
+# CMP 0, 100  # Compara R0 con 100
+# CMP @50, 1  # Compara Memoria[50] con R1
+
+# XCHG reg1, reg2: Intercambia valores de 'reg1' y 'reg2'.
+# Ejemplo:
+# XCHG 0, 1 # Intercambia R0 y R1
+
+# XOR destino_reg, fuente_reg: 'destino_reg' = 'destino_reg' ^ 'fuente_reg'.
+# Ejemplo:
+# XOR 2, 3  # R2 = R2 XOR R3
+
+# SHL destino_reg, num_bits: Desplaza 'destino_reg' a la izquierda 'num_bits'.
+# Ejemplo:
+# SHL 0, 2  # R0 = R0 << 2
+
+# SHR destino_reg, num_bits: Desplaza 'destino_reg' a la derecha 'num_bits'.
+# Ejemplo:
+# SHR 1, 1  # R1 = R1 >> 1
+
+###################################################
+# 4. Instrucciones de Tres Direcciones
+# (destino_reg, fuente1, fuente2)
+###################################################
+
+# ADD destino_reg, fuente1, fuente2: 'destino_reg' = 'fuente1' + 'fuente2'.
+# Ejemplos:
+# ADD 2, 0, 1     # R2 = R0 + R1
+# ADD 3, 0, 10    # R3 = R0 + 10
+# ADD 4, @50, @51 # R4 = Memoria[50] + Memoria[51]
+
+# SUB destino_reg, minuendo, sustraendo: 'destino_reg' = 'minuendo' - 'sustraendo'.
+# Ejemplos:
+# SUB 3, 1, 2     # R3 = R1 - R2
+# SUB 4, 1, 5     # R4 = R1 - 5
+
+# MUL destino_reg, fuente1, fuente2: 'destino_reg' = 'fuente1' * 'fuente2'.
+# Ejemplo:
+# MUL 5, 0, 1  # R5 = R0 * R1
+
+# DIV destino_reg, dividendo, divisor: 'destino_reg' = 'dividendo' / 'divisor' (entera).
+# Ejemplo:
+# DIV 6, 2, 3  # R6 = R2 / R3
+
+# AND destino_reg, fuente1, fuente2: 'destino_reg' = 'fuente1' & 'fuente2'.
+# Ejemplo:
+# AND 3, 0, 1  # R3 = R0 AND R1
+
+# OR destino_reg, fuente1, fuente2: 'destino_reg' = 'fuente1' | 'fuente2'.
+# Ejemplo:
+# OR 4, 1, 2   # R4 = R1 OR R2
+
+# XOR destino_reg, fuente1, fuente2: 'destino_reg' = 'fuente1' ^ 'fuente2'.
+# Ejemplo:
+# XOR 5, 0, 1  # R5 = R0 XOR R1
+
+# SHL destino_reg, fuente_reg, num_bits: 'destino_reg' = 'fuente_reg' << 'num_bits'.
+# Ejemplo:
+# SHL 2, 0, 3  # R2 = R0 << 3
+
+# SHR destino_reg, fuente_reg, num_bits: 'destino_reg' = 'fuente_reg' >> 'num_bits'.
+# Ejemplo:
+# SHR 3, 1, 2  # R3 = R1 >> 2
+
+###################################################
+# 5. Instrucciones con Operando Inmediato Específico
+###################################################
+
+# MOVI destino_reg, valor_inmediato: Carga 'valor_inmediato' en 'destino_reg'.
+# Ejemplos:
+# MOVI 0, 25  # R0 = 25
+# MOVI 1, -5  # R1 = -5 (se almacena como valor de 8 bits con signo, ej. 251 o 0xFB)
+
+###################################################
+# Fin del Cheatsheet
+###################################################

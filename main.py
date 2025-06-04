@@ -147,10 +147,10 @@ class CPU:
             print(f"[DEBUG] ADD: R{dst} new value: {self.registers.RVPU[dst]}")
         elif len(ops) == 3:
             dst, src1, src2 = ops
-            if not self._valid_reg(dst): return
-            val_src1 = self._resolve_operand(src1)
-            val_src2 = self._resolve_operand(src2)
-            print(f"[DEBUG] Executing: ADD R{dst}, {src1}, {src2} (src1: {val_src1}, src2: {val_src2})")
+            if not self._valid_reg(dst) or not self._valid_reg(src1) or not self._valid_reg(src2): return
+            val_src1 = self.registers.RVPU[src1]
+            val_src2 = self.registers.RVPU[src2]
+            print(f"[DEBUG] Executing: ADD R{dst}, R{src1}, R{src2} (src1: {val_src1}, src2: {val_src2})")
             self.registers.RVPU[dst] = self.alu.add(val_src1, val_src2)
             print(f"[DEBUG] ADD: R{dst} new value: {self.registers.RVPU[dst]}")
 
@@ -357,12 +357,16 @@ class CPU:
                 return
             print(f"[FIDICOFOEIWO] DECODIFICACIÓN: OPERANDOS={ops}")
         elif fase == 'CALCULO_OPERANDO':
+            opcode = ctx['opcode']
             ops = ctx['ops']
-            resolved_ops = tuple(self._resolve_operand(op) for op in ops)
+            # Solo resolvemos operandos para instrucciones que NO sean LOAD o STORE
+            if opcode in ('LOAD', 'STORE'):
+                resolved_ops = ops
+            else:
+                resolved_ops = tuple(self._resolve_operand(op) for op in ops)
             ctx['resolved_ops'] = resolved_ops
             print(f"[FIDICOFOEIWO] CÁLCULO DE OPERANDO: {resolved_ops}")
         elif fase == 'FETCH_OPERANDO':
-            # En este ejemplo, ya se resolvieron los operandos en la fase anterior
             print(f"[FIDICOFOEIWO] FETCH OPERANDO: {ctx['resolved_ops']}")
         elif fase == 'EJECUCION':
             opcode = ctx['opcode']
@@ -370,7 +374,6 @@ class CPU:
             print(f"[FIDICOFOEIWO] EJECUCIÓN: {opcode} {resolved_ops}")
             self.instruction_set[opcode](*resolved_ops)
         elif fase == 'WRITEBACK':
-            # Simulación: el writeback depende de la instrucción, pero actualizamos PSW
             self.registers.PSW = (
                 (self.alu.flags['Z'] << 0) |
                 (self.alu.flags['C'] << 1) |
@@ -379,7 +382,6 @@ class CPU:
             )
             print(f"[FIDICOFOEIWO] WRITEBACK: PSW={self.registers.PSW}")
         elif fase == 'OUTPUT':
-            # Simulación: solo mostramos que terminó el ciclo
             print(f"[FIDICOFOEIWO] OUTPUT: Fin de ciclo para instrucción {ctx['opcode']}\n")
         # Avanza a la siguiente fase
         self._fidicofoeiwo_state = (self._fidicofoeiwo_state + 1) % len(fases)
@@ -408,5 +410,6 @@ if __name__ == '__main__':
     cpu.memory.data[4] = ("NOP",)
     cpu.memory.data[100] = 5
     cpu.memory.data[101] = 10
+    cpu.memory.data[50] = 36
     app = CPUGUI(cpu, cpu.memory)
     app.mainloop()
